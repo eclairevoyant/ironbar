@@ -7,3 +7,5 @@ pub mod music;
 #[cfg(feature = "tray")]
 pub mod system_tray;
 pub mod wayland;
+#[cfg(feature = "volume")]
+pub mod volume;

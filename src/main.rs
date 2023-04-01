@@ -44,6 +44,8 @@ async fn main() -> Result<()> {
     info!("Ironbar version {}", VERSION);
     info!("Starting application");
 
+    clients::volume::pulse_bak::test();
+
     let wayland_client = wayland::get_client().await;
 
     let app = Application::builder().application_id(GTK_APP_ID).build();
