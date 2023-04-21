@@ -21,7 +21,7 @@ use crate::style::load_css;
 use color_eyre::eyre::Result;
 use color_eyre::Report;
 use dirs::config_dir;
-use gtk::gdk::Display;
+use gtk::gdk::{Display, Monitor};
 use gtk::prelude::*;
 use gtk::Application;
 use std::env;
@@ -120,7 +120,10 @@ fn create_bars(
     debug!("Received {} outputs from Wayland", outputs.len());
     debug!("Outputs: {:?}", outputs);
 
-    let num_monitors = display.n_monitors();
+    for monitor in display.monitors().iter::<Monitor>() {
+        let monitor = monitor.unwrap();
+    }
+
 
     for i in 0..num_monitors {
         let monitor = display

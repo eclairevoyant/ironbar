@@ -8,6 +8,7 @@ use gtk::Scale;
 use serde::Deserialize;
 use std::cell::Cell;
 use std::ops::Neg;
+use glib::signal::Inhibit;
 use tokio::spawn;
 use tracing::error;
 

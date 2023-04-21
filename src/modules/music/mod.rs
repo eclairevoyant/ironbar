@@ -13,6 +13,7 @@ use regex::Regex;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
+use glib::signal::Inhibit;
 use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, Sender};
 use tracing::error;
@@ -155,7 +156,7 @@ impl Module<Button> for MusicModule {
     ) -> Result<ModuleWidget<Button>> {
         let button = Button::new();
         let button_contents = gtk::Box::new(Orientation::Horizontal, 5);
-        button.add(&button_contents);
+        button.append(&button_contents);
 
         let icon_play = new_icon_label(&self.icons.play, info.icon_theme, self.icon_size);
         let icon_pause = new_icon_label(&self.icons.pause, info.icon_theme, self.icon_size);
@@ -167,9 +168,9 @@ impl Module<Button> for MusicModule {
             truncate.truncate_label(&label);
         }
 
-        button_contents.add(&icon_pause);
-        button_contents.add(&icon_play);
-        button_contents.add(&label);
+        button_contents.append(&icon_pause);
+        button_contents.append(&icon_play);
+        button_contents.append(&label);
 
         let orientation = info.bar_position.get_orientation();
 
@@ -261,9 +262,9 @@ impl Module<Button> for MusicModule {
         album_label.container.set_widget_name("album");
         artist_label.container.set_widget_name("artist");
 
-        info_box.add(&title_label.container);
-        info_box.add(&album_label.container);
-        info_box.add(&artist_label.container);
+        info_box.append(&title_label.container);
+        info_box.append(&album_label.container);
+        info_box.append(&artist_label.container);
 
         let controls_box = gtk::Box::builder().name("controls").build();
 
@@ -279,12 +280,12 @@ impl Module<Button> for MusicModule {
         let btn_next = new_icon_button(&icons.next, icon_theme, self.icon_size);
         btn_next.set_widget_name("btn-next");
 
-        controls_box.add(&btn_prev);
-        controls_box.add(&btn_play);
-        controls_box.add(&btn_pause);
-        controls_box.add(&btn_next);
+        controls_box.append(&btn_prev);
+        controls_box.append(&btn_play);
+        controls_box.append(&btn_pause);
+        controls_box.append(&btn_next);
 
-        info_box.add(&controls_box);
+        info_box.append(&controls_box);
 
         let volume_box = gtk::Box::builder()
             .orientation(Orientation::Vertical)
@@ -302,9 +303,9 @@ impl Module<Button> for MusicModule {
         volume_box.pack_start(&volume_slider, true, true, 0);
         volume_box.pack_end(&volume_icon, false, false, 0);
 
-        container.add(&album_image);
-        container.add(&info_box);
-        container.add(&volume_box);
+        container.append(&album_image);
+        container.append(&info_box);
+        container.append(&volume_box);
 
         let tx_prev = tx.clone();
         btn_prev.connect_clicked(move |_| {
@@ -331,8 +332,6 @@ impl Module<Button> for MusicModule {
             try_send!(tx_vol, PlayerCommand::Volume(val as u8));
             Inhibit(false)
         });
-
-        container.show_all();
 
         {
             let icon_theme = icon_theme.clone();
@@ -464,8 +463,8 @@ impl IconLabel {
         icon.style_context().add_class("icon");
         label.style_context().add_class("label");
 
-        container.add(&icon);
-        container.add(&label);
+        container.append(&icon);
+        container.append(&label);
 
         Self { label, container }
     }

@@ -7,6 +7,7 @@ use gtk::gdk::Monitor;
 use gtk::prelude::*;
 use gtk::{Application, ApplicationWindow, IconTheme, Orientation};
 use std::sync::{Arc, RwLock};
+use glib::signal::Inhibit;
 use tracing::{debug, info};
 
 /// Creates a new window for a bar,
@@ -48,16 +49,16 @@ pub fn create_bar(
     let center = create_container("center", orientation);
     let end = create_container("end", orientation);
 
-    content.add(&start);
+    content.append(&start);
     content.set_center_widget(Some(&center));
     content.pack_end(&end, false, false, 0);
 
     load_modules(&start, &center, &end, app, config, monitor, monitor_name)?;
-    win.add(&content);
+    win.append(&content);
 
     win.connect_destroy_event(|_, _| {
         info!("Shutting down");
-        gtk::main_quit();
+        // gtk::main_quit();
         Inhibit(false)
     });
 
@@ -197,7 +198,7 @@ fn add_modules(
             let common = $module.common.take().expect("Common config did not exist");
             let widget = create_module(*$module, $id, &info, &Arc::clone(&popup))?;
             let container = wrap_widget(&widget, common, orientation);
-            content.add(&container);
+            content.append(&container);
         }};
     }
 

@@ -10,6 +10,7 @@ use gtk::{Button, IconTheme, Orientation};
 use indexmap::IndexMap;
 use std::rc::Rc;
 use std::sync::RwLock;
+use glib::signal::Inhibit;
 use tokio::sync::mpsc::Sender;
 use tracing::error;
 
@@ -233,8 +234,6 @@ impl ItemButton {
                 Inhibit(false)
             });
         }
-
-        button.show_all();
 
         Self {
             button,

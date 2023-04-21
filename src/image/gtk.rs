@@ -38,7 +38,7 @@ pub fn new_icon_label(input: &str, icon_theme: &IconTheme, size: i32) -> gtk::Bo
         let image = Image::new();
         image.set_widget_name("image");
 
-        container.add(&image);
+        container.append(&image);
 
         if let Err(err) = ImageProvider::parse(input, icon_theme, size)
             .and_then(|provider| provider.load_into_image(image))
@@ -49,7 +49,7 @@ pub fn new_icon_label(input: &str, icon_theme: &IconTheme, size: i32) -> gtk::Bo
         let label = Label::new(Some(input));
         label.set_widget_name("label");
 
-        container.add(&label);
+        container.append(&label);
     }
 
     container

@@ -91,7 +91,7 @@ fn get_menu_items(
                         let menu = Menu::new();
                         get_menu_items(&item_info.submenu, &tx.clone(), id, path)
                             .iter()
-                            .for_each(|item| menu.add(item));
+                            .for_each(|item| menu.append(item));
 
                         builder = builder.submenu(&menu);
                     }
@@ -197,11 +197,11 @@ impl Module<MenuBar> for TrayModule {
                                     },
                                     |image| {
                                         image.set_widget_name(address.as_str());
-                                        menu_item.add(&image);
+                                        menu_item.append(&image);
                                     },
                                 );
 
-                            container.add(&menu_item);
+                            container.append(&menu_item);
                             menu_item.show_all();
                             menu_item
                         });
@@ -216,7 +216,7 @@ impl Module<MenuBar> for TrayModule {
                                     &menu_path,
                                 )
                                 .iter()
-                                .for_each(|item| menu.add(item));
+                                .for_each(|item| menu.append(item));
                                 menu_item.set_submenu(Some(&menu));
                             }
                         }

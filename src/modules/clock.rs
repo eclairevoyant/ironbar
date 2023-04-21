@@ -63,7 +63,7 @@ impl Module<Button> for ClockModule {
         let button = Button::new();
         let label = Label::new(None);
         label.set_angle(info.bar_position.get_angle());
-        button.add(&label);
+        button.append(&label);
 
         let orientation = info.bar_position.get_orientation();
         button.connect_clicked(move |button| {
@@ -107,10 +107,10 @@ impl Module<Button> for ClockModule {
             .build();
         let format = "%H:%M:%S";
 
-        container.add(&clock);
+        container.append(&clock);
 
         let calendar = Calendar::builder().name("calendar").build();
-        container.add(&calendar);
+        container.append(&calendar);
 
         {
             rx.attach(None, move |date| {
@@ -119,8 +119,6 @@ impl Module<Button> for ClockModule {
                 Continue(true)
             });
         }
-
-        container.show_all();
 
         Some(container)
     }

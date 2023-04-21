@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use glib::signal::Inhibit;
 
 use crate::config::BarPosition;
 use crate::modules::ModuleInfo;
@@ -121,7 +122,7 @@ impl Popup {
 
         if let Some(content) = self.cache.get(&key) {
             content.style_context().add_class("popup");
-            self.window.add(content);
+            self.window.append(content);
         }
     }
 

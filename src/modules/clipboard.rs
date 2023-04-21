@@ -8,10 +8,11 @@ use crate::try_send;
 use gtk::gdk_pixbuf::Pixbuf;
 use gtk::gio::{Cancellable, MemoryInputStream};
 use gtk::prelude::*;
-use gtk::{Button, EventBox, Image, Label, Orientation, RadioButton, Widget};
+use gtk::{Button, Image, Label, Orientation, RadioButton, Widget};
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::sync::Arc;
+use glib::signal::Inhibit;
 use tokio::spawn;
 use tokio::sync::mpsc::{Receiver, Sender};
 use tracing::{debug, error};
@@ -161,10 +162,10 @@ impl Module<Button> for ClipboardModule {
             .build();
 
         let entries = gtk::Box::new(Orientation::Vertical, 5);
-        container.add(&entries);
+        container.append(&entries);
 
         let hidden_option = RadioButton::new();
-        entries.add(&hidden_option);
+        entries.append(&hidden_option);
 
         let mut items = HashMap::new();
 
@@ -183,7 +184,7 @@ impl Module<Button> for ClipboardModule {
                                 let button = RadioButton::from_widget(&hidden_option);
 
                                 let label = Label::new(Some(value));
-                                button.add(&label);
+                                button.append(&label);
 
                                 if let Some(truncate) = self.truncate {
                                     truncate.truncate_label(&label);
@@ -218,7 +219,7 @@ impl Module<Button> for ClipboardModule {
                         button.set_active(true); // if just added, should be on clipboard
 
                         let button_wrapper = EventBox::new();
-                        button_wrapper.add(&button);
+                        button_wrapper.append(&button);
 
                         button_wrapper.set_widget_name(&format!("copy-{id}"));
                         button_wrapper.set_above_child(true);
@@ -261,12 +262,11 @@ impl Module<Button> for ClipboardModule {
                             });
                         }
 
-                        row.add(&button_wrapper);
+                        row.append(&button_wrapper);
                         row.pack_end(&remove_button, false, false, 0);
 
-                        entries.add(&row);
+                        entries.append(&row);
                         entries.reorder_child(&row, 0);
-                        row.show_all();
 
                         items.insert(id, (row, button));
                     }
@@ -300,7 +300,6 @@ impl Module<Button> for ClipboardModule {
             });
         }
 
-        container.show_all();
         hidden_option.hide();
 
         Some(container)

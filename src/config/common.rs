@@ -1,9 +1,10 @@
+use glib::signal::Inhibit;
 use crate::dynamic_string::DynamicString;
 use crate::script::{Script, ScriptInput};
 use crate::send;
 use gtk::gdk::ScrollDirection;
 use gtk::prelude::*;
-use gtk::{EventBox, Orientation, Revealer, RevealerTransitionType};
+use gtk::{GestureClick, Orientation, Revealer, RevealerTransitionType, Widget};
 use serde::Deserialize;
 use tokio::spawn;
 use tracing::trace;
@@ -55,14 +56,16 @@ impl TransitionType {
 
 impl CommonConfig {
     /// Configures the module's container according to the common config options.
-    pub fn install(mut self, container: &EventBox, revealer: &Revealer) {
-        self.install_show_if(container, revealer);
+    pub fn install<W: IsA<Widget>>(mut self, widget: &W, revealer: &Revealer) {
+        self.install_show_if(widget, revealer);
 
         let left_click_script = self.on_click_left.map(Script::new_polling);
         let middle_click_script = self.on_click_middle.map(Script::new_polling);
         let right_click_script = self.on_click_right.map(Script::new_polling);
 
-        container.connect_button_press_event(move |_, event| {
+        let gesture = GestureClick::new();
+
+        gesture.connect_pressed(move |_, event| {
             let script = match event.button() {
                 1 => left_click_script.as_ref(),
                 2 => middle_click_script.as_ref(),
@@ -74,14 +77,12 @@ impl CommonConfig {
                 trace!("Running on-click script: {}", event.button());
                 script.run_as_oneshot(None);
             }
-
-            Inhibit(false)
         });
 
         let scroll_up_script = self.on_scroll_up.map(Script::new_polling);
         let scroll_down_script = self.on_scroll_down.map(Script::new_polling);
 
-        container.connect_scroll_event(move |_, event| {
+        widget.connect_scroll_event(move |_, event| {
             let script = match event.direction() {
                 ScrollDirection::Up => scroll_up_script.as_ref(),
                 ScrollDirection::Down => scroll_down_script.as_ref(),
@@ -99,7 +100,7 @@ impl CommonConfig {
         macro_rules! install_oneshot {
             ($option:expr, $method:ident) => {
                 $option.map(Script::new_polling).map(|script| {
-                    container.$method(move |_, _| {
+                    widget.$method(move |_, _| {
                         script.run_as_oneshot(None);
                         Inhibit(false)
                     });
@@ -111,7 +112,7 @@ impl CommonConfig {
         install_oneshot!(self.on_mouse_exit, connect_leave_notify_event);
 
         if let Some(tooltip) = self.tooltip {
-            let container = container.clone();
+            let container = widget.clone();
             DynamicString::new(&tooltip, move |string| {
                 container.set_tooltip_text(Some(&string));
                 Continue(true)
@@ -119,14 +120,14 @@ impl CommonConfig {
         }
     }
 
-    fn install_show_if(&mut self, container: &EventBox, revealer: &Revealer) {
+    fn install_show_if<W: IsA<Widget>>(&mut self, widget: &W, revealer: &Revealer) {
         self.show_if.take().map_or_else(
             || {
-                container.show_all();
+                widget.set_visible(true)
             },
             |show_if| {
                 let script = Script::new_polling(show_if);
-                let container = container.clone();
+                let widget = widget.clone();
                 let (tx, rx) = glib::MainContext::channel(glib::PRIORITY_DEFAULT);
 
                 spawn(async move {

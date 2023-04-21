@@ -23,7 +23,7 @@ impl CustomWidget for ButtonWidget {
         if let Some(text) = self.label {
             let label = Label::new(None);
             label.set_use_markup(true);
-            button.add(&label);
+            button.append(&label);
 
             DynamicString::new(&text, move |string| {
                 label.set_markup(&string);

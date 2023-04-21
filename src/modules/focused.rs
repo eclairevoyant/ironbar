@@ -104,8 +104,8 @@ impl Module<gtk::Box> for FocusedModule {
             truncate.truncate_label(&label);
         }
 
-        container.add(&icon);
-        container.add(&label);
+        container.append(&icon);
+        container.append(&label);
 
         {
             let icon_theme = icon_theme.clone();

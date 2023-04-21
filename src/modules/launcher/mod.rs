@@ -354,7 +354,7 @@ impl Module<gtk::Box> for LauncherModule {
                                 &controller_tx,
                             );
 
-                            container.add(&button.button);
+                            container.append(&button.button);
                             buttons.insert(item.app_id, button);
                         }
                     }
@@ -433,7 +433,7 @@ impl Module<gtk::Box> for LauncherModule {
         // we need some content to force the container to have a size
         let placeholder = Button::with_label("PLACEHOLDER");
         placeholder.set_width_request(MAX_WIDTH);
-        container.add(&placeholder);
+        container.append(&placeholder);
 
         let mut buttons = IndexMap::<String, IndexMap<usize, Button>>::new();
 
@@ -525,10 +525,9 @@ impl Module<gtk::Box> for LauncherModule {
                         if let Some(buttons) = buttons.get(&app_id) {
                             for (_, button) in buttons {
                                 button.style_context().add_class("popup-item");
-                                container.add(button);
+                                container.append(button);
                             }
 
-                            container.show_all();
                             container.set_width_request(MAX_WIDTH);
                         }
                     }

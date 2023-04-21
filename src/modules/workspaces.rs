@@ -186,7 +186,7 @@ impl Module<gtk::Box> for WorkspacesModule {
                                         icon_size,
                                         &context.controller_tx,
                                     );
-                                    container.add(&item);
+                                    container.append(&item);
 
                                     button_map.insert(workspace.name, item);
                                 }
@@ -196,7 +196,6 @@ impl Module<gtk::Box> for WorkspacesModule {
                                 reorder_workspaces(&container);
                             }
 
-                            container.show_all();
                             has_initialized = true;
                         }
                     }
@@ -223,7 +222,7 @@ impl Module<gtk::Box> for WorkspacesModule {
                                 &context.controller_tx,
                             );
 
-                            container.add(&item);
+                            container.append(&item);
                             if self.sort == SortOrder::Alphanumeric {
                                 reorder_workspaces(&container);
                             }
@@ -248,7 +247,7 @@ impl Module<gtk::Box> for WorkspacesModule {
                                     &context.controller_tx,
                                 );
 
-                                container.add(&item);
+                                container.append(&item);
 
                                 if self.sort == SortOrder::Alphanumeric {
                                     reorder_workspaces(&container);
