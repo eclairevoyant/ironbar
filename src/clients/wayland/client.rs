@@ -2,8 +2,9 @@ use super::wlr_foreign_toplevel::handle::ToplevelHandle;
 use super::wlr_foreign_toplevel::manager::ToplevelManagerState;
 use super::wlr_foreign_toplevel::ToplevelEvent;
 use super::Environment;
+use crate::cached_broadcast::CachedBroadcastChannel;
 use crate::error::ERR_CHANNEL_RECV;
-use crate::send;
+use crate::{cached_broadcast, send};
 use cfg_if::cfg_if;
 use color_eyre::Report;
 use smithay_client_toolkit::output::{OutputInfo, OutputState};
@@ -31,11 +32,8 @@ cfg_if! {
 
 #[derive(Debug)]
 pub enum Request {
-    /// Sends a request for all the outputs.
-    /// These are then sent on the `output` channel.
-    Outputs,
     /// Sends a request for all the seats.
-    /// These are then sent ont the `seat` channel.
+    /// These are then sent on the `seat` channel.
     Seats,
     /// Sends a request for all the toplevels.
     /// These are then sent on the `toplevel_init` channel.
@@ -53,8 +51,10 @@ pub enum Request {
 
 pub struct WaylandClient {
     // External channels
+    output_channel: CachedBroadcastChannel<OutputInfo>,
     toplevel_tx: broadcast::Sender<ToplevelEvent>,
     _toplevel_rx: broadcast::Receiver<ToplevelEvent>,
+
     #[cfg(feature = "clipboard")]
     clipboard_tx: broadcast::Sender<Arc<ClipboardItem>>,
     #[cfg(feature = "clipboard")]
@@ -62,7 +62,6 @@ pub struct WaylandClient {
 
     // Internal channels
     toplevel_init_rx: mpsc::Receiver<HashMap<usize, ToplevelHandle>>,
-    output_rx: mpsc::Receiver<Vec<OutputInfo>>,
     seat_rx: mpsc::Receiver<Vec<WlSeat>>,
     #[cfg(feature = "clipboard")]
     clipboard_init_rx: mpsc::Receiver<Option<Arc<ClipboardItem>>>,
@@ -74,10 +73,14 @@ impl WaylandClient {
     pub(super) fn new() -> Self {
         let (toplevel_tx, toplevel_rx) = broadcast::channel(32);
 
+        let mut output_channel = CachedBroadcastChannel::new(8);
+        let output_tx = output_channel.sender();
+
+        let tx2 = output_tx.clone();
+
         let (toplevel_init_tx, toplevel_init_rx) = mpsc::channel();
         #[cfg(feature = "clipboard")]
         let (clipboard_init_tx, clipboard_init_rx) = mpsc::channel();
-        let (output_tx, output_rx) = mpsc::channel();
         let (seat_tx, seat_rx) = mpsc::channel();
 
         let toplevel_tx2 = toplevel_tx.clone();
@@ -99,6 +102,7 @@ impl WaylandClient {
 
             let conn =
                 Connection::connect_to_env().expect("Failed to connect to Wayland compositor");
+
             let (globals, queue) =
                 registry_queue_init(&conn).expect("Failed to retrieve Wayland globals");
 
@@ -139,6 +143,7 @@ impl WaylandClient {
                 handles: HashMap::new(),
                 #[cfg(feature = "clipboard")]
                 clipboard: crate::arc_mut!(None),
+                output_tx,
                 toplevel_tx,
                 #[cfg(feature = "clipboard")]
                 clipboard_tx,
@@ -156,11 +161,6 @@ impl WaylandClient {
                     trace!("{event:?}");
                     match event {
                         Event::Msg(Request::Roundtrip) => debug!("Received refresh event"),
-                        Event::Msg(Request::Outputs) => {
-                            trace!("Received get outputs request");
-
-                            send!(output_tx, env.output_info());
-                        }
                         Event::Msg(Request::Seats) => {
                             trace!("Receive get seats request");
                             send!(seat_tx, env.seats.clone());
@@ -196,12 +196,12 @@ impl WaylandClient {
         });
 
         Self {
+            output_channel,
             toplevel_tx,
             _toplevel_rx: toplevel_rx,
             toplevel_init_rx,
             #[cfg(feature = "clipboard")]
             clipboard_init_rx,
-            output_rx,
             seat_rx,
             #[cfg(feature = "clipboard")]
             clipboard_tx,
@@ -242,6 +242,10 @@ impl WaylandClient {
         (rx, data)
     }
 
+    pub fn subscribe_outputs(&mut self) -> cached_broadcast::Receiver<OutputInfo> {
+        self.output_channel.receiver()
+    }
+
     /// Force a roundtrip on the wayland connection,
     /// flushing any queued events and immediately receiving any new ones.
     pub fn roundtrip(&self) {
@@ -249,11 +253,13 @@ impl WaylandClient {
         send!(self.request_tx, Request::Roundtrip);
     }
 
-    pub fn get_outputs(&self) -> Vec<OutputInfo> {
-        trace!("Sending get outputs request");
-
-        send!(self.request_tx, Request::Outputs);
-        self.output_rx.recv().expect(ERR_CHANNEL_RECV)
+    /// Gets a list of all outputs.
+    ///
+    /// This should only be used in a scenario
+    /// where you need a snapshot of outputs at the current time.
+    /// Prefer to listen to output events with `subscribe_output` where possible.
+    pub fn get_outputs(&self) -> &Vec<OutputInfo> {
+        self.output_channel.data()
     }
 
     pub fn get_seats(&self) -> Vec<WlSeat> {

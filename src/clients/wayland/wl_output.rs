@@ -1,4 +1,6 @@
 use super::Environment;
+use crate::cached_broadcast::Cacheable;
+use crate::{cached_broadcast, try_send};
 use smithay_client_toolkit::output::{OutputHandler, OutputInfo, OutputState};
 use tracing::debug;
 use wayland_client::protocol::wl_output;
@@ -31,9 +33,12 @@ impl OutputHandler for Environment {
         &mut self,
         _conn: &Connection,
         _qh: &QueueHandle<Self>,
-        _output: wl_output::WlOutput,
+        output: wl_output::WlOutput,
     ) {
         debug!("Handler received new output");
+        if let Some(info) = self.output_state.info(&output) {
+            try_send!(self.output_tx, cached_broadcast::Event::Add(info));
+        };
     }
 
     fn update_output(
@@ -42,14 +47,26 @@ impl OutputHandler for Environment {
         _qh: &QueueHandle<Self>,
         _output: wl_output::WlOutput,
     ) {
+        debug!("Handle received output update");
     }
 
     fn output_destroyed(
         &mut self,
         _conn: &Connection,
         _qh: &QueueHandle<Self>,
-        _output: wl_output::WlOutput,
+        output: wl_output::WlOutput,
     ) {
         debug!("Handle received output destruction");
+        if let Some(info) = self.output_state.info(&output) {
+            try_send!(self.output_tx, cached_broadcast::Event::Remove(info.id));
+        };
+    }
+}
+
+impl Cacheable for OutputInfo {
+    type Key = u32;
+
+    fn get_key(&self) -> Self::Key {
+        self.id
     }
 }

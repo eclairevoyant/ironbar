@@ -6,10 +6,10 @@ mod wl_seat;
 mod wlr_foreign_toplevel;
 
 use self::wlr_foreign_toplevel::manager::ToplevelManagerState;
-use crate::{arc_mut, delegate_foreign_toplevel_handle, delegate_foreign_toplevel_manager};
+use crate::{arc_mut, cached_broadcast, delegate_foreign_toplevel_handle, delegate_foreign_toplevel_manager};
 use cfg_if::cfg_if;
 use lazy_static::lazy_static;
-use smithay_client_toolkit::output::OutputState;
+use smithay_client_toolkit::output::{OutputInfo, OutputState};
 use smithay_client_toolkit::reexports::calloop::LoopHandle;
 use smithay_client_toolkit::registry::{ProvidesRegistryState, RegistryState};
 use smithay_client_toolkit::seat::SeatState;
@@ -65,6 +65,7 @@ pub struct Environment {
     #[cfg(feature = "clipboard")]
     clipboard: Arc<Mutex<Option<Arc<ClipboardItem>>>>,
 
+    output_tx: cached_broadcast::Sender<OutputInfo>,
     toplevel_tx: broadcast::Sender<ToplevelEvent>,
     #[cfg(feature = "clipboard")]
     clipboard_tx: broadcast::Sender<Arc<ClipboardItem>>,

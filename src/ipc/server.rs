@@ -18,7 +18,7 @@ use crate::ipc::{Command, Response};
 use crate::ironvar::get_variable_manager;
 use crate::modules::PopupButton;
 use crate::style::load_css;
-use crate::{read_lock, send_async, try_send, write_lock, GlobalState};
+use crate::{await_sync, read_lock, send_async, try_send, write_lock, GlobalState};
 
 use super::Ipc;
 
@@ -123,14 +123,7 @@ impl Ipc {
                 Response::Ok
             }
             Command::Reload => {
-                info!("Closing existing bars");
-                let windows = application.windows();
-                for window in windows {
-                    window.close();
-                }
-
-                crate::load_interface(application, global_state);
-
+                await_sync(async move { crate::reload(application, global_state).await }).unwrap();
                 Response::Ok
             }
             Command::Set { key, value } => {
